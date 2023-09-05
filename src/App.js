@@ -35,13 +35,20 @@ const App = () => {
   const handleSolarPanelUpdate = (index, length, width, powerCapacity) => {
 
     const oldCapacity = solarPanels[index].powerCapacity;
+    console.log(oldCapacity, solarPanels[index].powerCapacity)
     const updatedSolarPanel = { x: solarPanels[index].x, y: solarPanels[index].y, length: length, width: width, powerCapacity:powerCapacity, type: 'solar' };
     const updatedSolarPanels = [...solarPanels];
     updatedSolarPanels[index] = updatedSolarPanel;
     setSolarPanels(updatedSolarPanels);
 
-    const powerOutputDiff = updatedSolarPanel.powerCapacity - oldCapacity;
-    setPowerOutput(powerOutput + (isNaN(powerOutputDiff) ? 0 : powerOutputDiff ));
+    if(isNaN(powerCapacity)){
+       setPowerOutput(powerOutput - oldCapacity);   // Subtract the old powerCapacity of that solar panel if user has emptied the input field
+       solarPanels[index].powerCapacity = 0;
+    }
+    else{
+      const powerOutputDiff = updatedSolarPanel.powerCapacity - (isNaN(oldCapacity) ? 0 : oldCapacity);
+      setPowerOutput(powerOutput + (isNaN(powerOutputDiff) ? 0 : powerOutputDiff ));
+    }
    
   };
 
