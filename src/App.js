@@ -29,17 +29,20 @@ const App = () => {
   const handleSolarPanelRemove = (index) => {
     const removedSolarPanel = solarPanels[index];
     setSolarPanels(solarPanels.filter((_, i) => i !== index));
-    setPowerOutput(powerOutput - removedSolarPanel.powerCapacity);
+    setPowerOutput(powerOutput - (isNaN(removedSolarPanel.powerCapacity) ? 0 : removedSolarPanel.powerCapacity ));
   };
 
   const handleSolarPanelUpdate = (index, length, width, powerCapacity) => {
-    const updatedSolarPanel = { x: solarPanels[index].x, y: solarPanels[index].y, length: length, width: width, powerCapacity: powerCapacity, type: 'solar' };
+
+    const oldCapacity = solarPanels[index].powerCapacity;
+    const updatedSolarPanel = { x: solarPanels[index].x, y: solarPanels[index].y, length: length, width: width, powerCapacity:powerCapacity, type: 'solar' };
     const updatedSolarPanels = [...solarPanels];
     updatedSolarPanels[index] = updatedSolarPanel;
     setSolarPanels(updatedSolarPanels);
 
-    const powerOutputDiff = powerCapacity - updatedSolarPanel.powerCapacity;
-    setPowerOutput(powerOutput + powerOutputDiff);
+    const powerOutputDiff = updatedSolarPanel.powerCapacity - oldCapacity;
+    setPowerOutput(powerOutput + (isNaN(powerOutputDiff) ? 0 : powerOutputDiff ));
+   
   };
 
   const handleSave = () => {
@@ -99,11 +102,6 @@ const App = () => {
           {solarPanels.map((solarPanel, index) => (
             <RoofItem key={`solarPanel-${index}`} x={solarPanel.x} y={solarPanel.y} width={solarPanel.length} height={solarPanel.width} type={solarPanel.type} />
           ))}
-
-
-          
-
-
         </RVRoof>
       </DndContext>
       <Calculator powerOutput={powerOutput} />
