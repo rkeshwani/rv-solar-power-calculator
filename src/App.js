@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Roof from './components/Roof';
 import SolarPanel from './components/SolarPanel';
 import Calculator from './components/Calculator';
@@ -23,34 +23,34 @@ const App = () => {
     const y = 0;
     const newSolarPanel = { x: x, y: y, length: length, width: width, powerCapacity: powerCapacity, type: 'solar' };
     setSolarPanels([...solarPanels, newSolarPanel]);
-    setPowerOutput(powerOutput + powerCapacity);
+    
   };
 
   const handleSolarPanelRemove = (index) => {
     const removedSolarPanel = solarPanels[index];
     setSolarPanels(solarPanels.filter((_, i) => i !== index));
-    setPowerOutput(powerOutput - (isNaN(removedSolarPanel.powerCapacity) ? 0 : removedSolarPanel.powerCapacity ));
+ 
   };
 
-  const handleSolarPanelUpdate = (index, length, width, powerCapacity) => {
+  const calculateTotalCapacity = () => {
+    let totalCapacity = 0;
+    for (const solarPanel of solarPanels){
+      totalCapacity += isNaN(solarPanel.powerCapacity) ? 0 : solarPanel.powerCapacity;
+    }
+    setPowerOutput(totalCapacity);
+  }
 
-    const oldCapacity = solarPanels[index].powerCapacity;
-    console.log(oldCapacity, solarPanels[index].powerCapacity)
-    const updatedSolarPanel = { x: solarPanels[index].x, y: solarPanels[index].y, length: length, width: width, powerCapacity:powerCapacity, type: 'solar' };
+  const handleSolarPanelUpdate = (index, length, width, powerCapacity) => {
+    const updatedSolarPanel = { x: solarPanels[index].x, y: solarPanels[index].y, length: length, width: width, powerCapacity: powerCapacity, type: 'solar' };
     const updatedSolarPanels = [...solarPanels];
     updatedSolarPanels[index] = updatedSolarPanel;
     setSolarPanels(updatedSolarPanels);
-
-    if(isNaN(powerCapacity)){
-       setPowerOutput(powerOutput - oldCapacity);   // Subtract the old powerCapacity of that solar panel if user has emptied the input field
-       solarPanels[index].powerCapacity = 0;
-    }
-    else{
-      const powerOutputDiff = updatedSolarPanel.powerCapacity - (isNaN(oldCapacity) ? 0 : oldCapacity);
-      setPowerOutput(powerOutput + (isNaN(powerOutputDiff) ? 0 : powerOutputDiff ));
-    }
-   
   };
+
+  useEffect(() => {
+  calculateTotalCapacity();
+  }, [solarPanels]);
+
 
   const handleSave = () => {
     const data = { roofDimensions, solarPanels };
