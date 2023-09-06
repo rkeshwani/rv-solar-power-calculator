@@ -1,12 +1,14 @@
 import React from 'react';
-
+import Button from '@mui/material/Button';
 const SaveButton = ({ onSave }) => {
   const handleClick = () => {
     onSave();
   };
 
   return (
-    <button onClick={handleClick}>Save</button>
+    <Button variant="contained" onClick={handleClick}>
+      Save
+    </Button>
   );
 };
 

@@ -1,5 +1,7 @@
 import React from 'react';
-
+import Typography from '@mui/material/Typography';
+import TextField from '@mui/material/TextField';
+import Grid from '@mui/material/Unstable_Grid2'; // G
 const Roof = ({ dimensions, onDimensionsChange }) => {
   const handleLengthChange = (event) => {
     const length = parseInt(event.target.value);
@@ -12,23 +14,29 @@ const Roof = ({ dimensions, onDimensionsChange }) => {
   };
 
   return (
-    <div>
-      <h2>Roof</h2>
-      <label htmlFor="length">Length:</label>
-      <input
-        type="number"
-        id="length"
-        value={dimensions.length}
-        onChange={handleLengthChange}
-      />
-      <label htmlFor="width">Width:</label>
-      <input
-        type="number"
-        id="width"
-        value={dimensions.width}
-        onChange={handleWidthChange}
-      />
-    </div>
+    <>
+      <Grid xs={12}>
+        <Typography variant="h2">Roof</Typography>
+      </Grid>
+      <Grid item xs={12} md={6}>
+        <TextField
+          type="number"
+          id="length"
+          value={dimensions.length}
+          onChange={handleLengthChange}
+          label="Length"
+        />
+      </Grid>
+      <Grid item xs={12} md={6}>
+        <TextField
+          type="number"
+          id="width"
+          value={dimensions.width}
+          onChange={handleWidthChange}
+          label="Width"
+        />
+      </Grid>
+    </>
   );
 };
 

@@ -1,4 +1,12 @@
 import React from 'react';
+import Typography from '@mui/material/Typography';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import CardActions from '@mui/material/CardActions';
+import CardHeader from '@mui/material/CardHeader';
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
+import Stack from '@mui/material/Stack';
 
 const SolarPanel = ({ index, length, width, powerCapacity, onRemove, onUpdate, updateGrid }) => {
   const handleLengthChange = (event) => {
@@ -23,31 +31,37 @@ const SolarPanel = ({ index, length, width, powerCapacity, onRemove, onUpdate, u
   };
 
   return (
-    <div className="solar-panel">
-      <h3>Solar Panel {index + 1}</h3>
-      <label htmlFor={`length-${index}`}>Length:</label>
-      <input
-        type="number"
-        id={`length-${index}`}
-        value={length}
-        onChange={handleLengthChange}
-      />
-      <label htmlFor={`width-${index}`}>Width:</label>
-      <input
-        type="number"
-        id={`width-${index}`}
-        value={width}
-        onChange={handleWidthChange}
-      />
-      <label htmlFor={`powerCapacity-${index}`}>Power Capacity:</label>
-      <input
-        type="number"
-        id={`powerCapacity-${index}`}
-        value={powerCapacity}
-        onChange={handlePowerCapacityChange}
-      />
-      <button onClick={handleRemove}>Remove</button>
-    </div>
+    <Card>
+      <CardHeader title={`Solar Panel ${index + 1}`} />
+      <CardContent>
+        <Stack spacing={2}>
+          <TextField
+            type="number"
+            id={`length-${index}`}
+            value={length}
+            onChange={handleLengthChange}
+            label="Length"
+          />
+          <TextField
+            type="number"
+            id={`width-${index}`}
+            value={width}
+            onChange={handleWidthChange}
+            label="Width"
+          />
+          <TextField
+            type="number"
+            id={`powerCapacity-${index}`}
+            value={powerCapacity}
+            onChange={handlePowerCapacityChange}
+            label="Power Capacity"
+          />
+        </Stack>
+        <CardActions>
+          <Button onClick={handleRemove}>Remove</Button>
+        </CardActions>
+      </CardContent>
+    </Card>
   );
 };
 
