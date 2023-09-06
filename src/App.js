@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Roof from './components/Roof';
 import SolarPanel from './components/SolarPanel';
 import Calculator from './components/Calculator';
@@ -23,24 +23,34 @@ const App = () => {
     const y = 0;
     const newSolarPanel = { x: x, y: y, length: length, width: width, powerCapacity: powerCapacity, type: 'solar' };
     setSolarPanels([...solarPanels, newSolarPanel]);
-    setPowerOutput(powerOutput + powerCapacity);
+    
   };
 
   const handleSolarPanelRemove = (index) => {
     const removedSolarPanel = solarPanels[index];
     setSolarPanels(solarPanels.filter((_, i) => i !== index));
-    setPowerOutput(powerOutput - removedSolarPanel.powerCapacity);
+ 
   };
+
+  const calculateTotalCapacity = () => {
+    let totalCapacity = 0;
+    for (const solarPanel of solarPanels){
+      totalCapacity += isNaN(solarPanel.powerCapacity) ? 0 : solarPanel.powerCapacity;
+    }
+    setPowerOutput(totalCapacity);
+  }
 
   const handleSolarPanelUpdate = (index, length, width, powerCapacity) => {
     const updatedSolarPanel = { x: solarPanels[index].x, y: solarPanels[index].y, length: length, width: width, powerCapacity: powerCapacity, type: 'solar' };
     const updatedSolarPanels = [...solarPanels];
     updatedSolarPanels[index] = updatedSolarPanel;
     setSolarPanels(updatedSolarPanels);
-
-    const powerOutputDiff = powerCapacity - updatedSolarPanel.powerCapacity;
-    setPowerOutput(powerOutput + powerOutputDiff);
   };
+
+  useEffect(() => {
+  calculateTotalCapacity();
+  }, [solarPanels]);
+
 
   const handleSave = () => {
     const data = { roofDimensions, solarPanels };
@@ -99,11 +109,6 @@ const App = () => {
           {solarPanels.map((solarPanel, index) => (
             <RoofItem key={`solarPanel-${index}`} x={solarPanel.x} y={solarPanel.y} width={solarPanel.length} height={solarPanel.width} type={solarPanel.type} />
           ))}
-
-
-          
-
-
         </RVRoof>
       </DndContext>
       <Calculator powerOutput={powerOutput} />
