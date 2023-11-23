@@ -9,13 +9,30 @@ export function RVRoof({ children, roofDimensions }) {
             <svg
                 style={{
                     position: 'relative',
-                    background: 'linear-gradient(0deg, lightgrey 1px, transparent 1px), linear-gradient(90deg, lightgrey 1px, transparent 1px)',
-                    backgroundSize: `${(window.innerWidth * (roofDimensions.length / 45)) / roofDimensions.length}px ${(window.innerHeight * (roofDimensions.width / 45)) / roofDimensions.width}px`,
                 }}
                 width={`${(roofDimensions.length / 45) * 100}%`}
                 height={`${(roofDimensions.width / 12) * 100}%`}
                 viewBox={`0 0 ${roofDimensions.length} ${roofDimensions.width}`}
                 className='roof'
-            >{children}</svg>
-        </div>);
+            >
+                <defs>
+                    <pattern
+                        id="smallGrid"
+                        width="1"
+                        height="1"
+                        patternUnits="userSpaceOnUse"
+                    >
+                        <path
+                            d={`M 1 0 L 0 0 0 1`}
+                            fill="none"
+                            stroke="gray"
+                            strokeWidth="0.5"
+                        />
+                    </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#smallGrid)" />
+                {children}
+            </svg>
+        </div>
+    );
 }

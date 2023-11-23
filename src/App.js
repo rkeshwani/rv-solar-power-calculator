@@ -96,7 +96,7 @@ const App = () => {
         <Grid md={12} spacing={2}>
           <DndContext>
             <RVRoof roofDimensions={roofDimensions}>
-              <div
+              {/* <div
                 style={{
                   content: '',
                   position: 'absolute',
@@ -106,7 +106,7 @@ const App = () => {
                   height: '100%',
                   zIndex: -1,
                 }}
-              ></div>
+              ></div> */}
               {/* {grid.map((row, rowIndex) => (
             <g key={rowIndex}>
               {row.map((cell, cellIndex) => (
