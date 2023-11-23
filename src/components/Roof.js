@@ -24,7 +24,7 @@ const Roof = ({ dimensions, onDimensionsChange }) => {
           id="length"
           value={dimensions.length}
           onChange={handleLengthChange}
-          label="Length"
+          label="Length (ft/m)"
         />
       </Grid>
       <Grid item xs={12} md={6}>
@@ -33,7 +33,7 @@ const Roof = ({ dimensions, onDimensionsChange }) => {
           id="width"
           value={dimensions.width}
           onChange={handleWidthChange}
-          label="Width"
+          label="Width (ft/m)"
         />
       </Grid>
     </>
