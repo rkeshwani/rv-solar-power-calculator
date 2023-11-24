@@ -1,6 +1,5 @@
 //Library imports
 import React, { useState, useEffect, useContext, useRef } from 'react';
-import { DndContext } from '@dnd-kit/core';
 //Project imports
 import Roof from './components/Roof';
 import SolarPanel from './components/SolarPanel';
@@ -95,6 +94,7 @@ const App = () => {
             dimensions={roofDimensions}
             onDimensionsChange={handleRoofDimensionsChange}
           />
+          Enter the dimensions of your roof in feet or meters.
         </Grid>
         <Grid md={12} spacing={2}>
           <RVRoof roofDimensions={roofDimensions} svgRef={svgRef}>

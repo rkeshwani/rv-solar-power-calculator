@@ -1,5 +1,4 @@
 import React, { useContext } from 'react';
-import { useDroppable } from '@dnd-kit/core';
 import { SolarPanelContext } from '../contexts/SolarPanelContext';
 export function RVRoof({ children, roofDimensions, svgRef }) {
     const { solarPanels, setSolarPanels } = useContext(SolarPanelContext);

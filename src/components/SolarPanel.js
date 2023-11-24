@@ -40,21 +40,21 @@ const SolarPanel = ({ index, length, width, powerCapacity, onRemove, onUpdate, u
             id={`length-${index}`}
             value={length}
             onChange={handleLengthChange}
-            label="Length"
+            label="Length (ft/m)"
           />
           <TextField
             type="number"
             id={`width-${index}`}
             value={width}
             onChange={handleWidthChange}
-            label="Width"
+            label="Width (ft/m)"
           />
           <TextField
             type="number"
             id={`powerCapacity-${index}`}
             value={powerCapacity}
             onChange={handlePowerCapacityChange}
-            label="Power Capacity"
+            label="Power Capacity (KwH/AH)"
           />
         </Stack>
         <CardActions>
