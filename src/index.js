@@ -3,11 +3,17 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import { RoofDimensionsProvider } from './contexts/RoofDimensionsContext';
+import { SolarPanelProvider } from './contexts/SolarPanelContext';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <App />
+    <RoofDimensionsProvider>
+      <SolarPanelProvider>
+        <App />
+      </SolarPanelProvider>
+    </RoofDimensionsProvider>
   </React.StrictMode>
 );
 

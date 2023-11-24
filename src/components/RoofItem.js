@@ -1,28 +1,26 @@
-import { useDraggable } from "@dnd-kit/core";
-import { useMemo } from "react";
-import { createSnapModifier, snapCenterToCursor, restrictToParentElement } from "@dnd-kit/modifiers";
-export function RoofItem({ key, x, y, width, height, type }) {
-    const { attributes, transform, listeners, setNodeRef } = useDraggable({
-        id: 'item',
-    });
-    const style = transform ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-    } : undefined;
-    const gridSize = window.innerWidth / 45;
-    const snapToGrid = useMemo(() => createSnapModifier(gridSize), [gridSize]);
-    return (
-        <rect
-            {...listeners}
-            {...attributes}
-            modifiers={[snapToGrid, snapCenterToCursor, restrictToParentElement]}
-            style={style}
-            ref={setNodeRef}
-            key={key}
-            x={x}
-            y={y}
-            width={width}
-            height={height}
-            fill={type === 'solar' ? 'blue' : ''}
 
-        />);
+import { useContext, useMemo, useState } from "react";
+import { SolarPanelContext } from "../contexts/SolarPanelContext";
+import reactable from "reactablejs";
+function RoofItem({ reference, x, y, width, height, type, svgRef, getRef }) {
+    const { solarPanels, setSolarPanels } = useContext(SolarPanelContext);
+    const gridSize = window.innerWidth / 45;
+    // const [position, setPosition] = useState({ x: x, y: y });
+    const [dragging, setDragging] = useState(false);
+    return (
+        <svg>
+            <rect
+                ref={getRef}
+                key={reference}
+                x={x}
+                y={y}
+                width={width}
+                height={height}
+                fill={type === 'solar' ? 'blue' : ''}
+            />
+            <text x={x + width / 2} y={y + height / 2} fill="white" style={{ fontSize: '1px', textAnchor: 'middle', dominantBaseline: 'middle' }}>{reference}</text>
+        </svg>
+    );
 }
+
+export default reactable(RoofItem);

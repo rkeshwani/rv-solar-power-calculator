@@ -1,5 +1,5 @@
 //Library imports
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { DndContext } from '@dnd-kit/core';
 //Project imports
 import Roof from './components/Roof';
@@ -8,17 +8,20 @@ import Calculator from './components/Calculator';
 import SaveButton from './components/SaveButton';
 import './styles.css';
 import { RVRoof } from './components/RVRoof';
-import { RoofItem } from './components/RoofItem';
+import RoofItem from './components/RoofItem';
 // MUI imports
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Unstable_Grid2'; // Grid version 2
 import Button from '@mui/material/Button';
+import { RoofDimensionsContext } from './contexts/RoofDimensionsContext';
+import { SolarPanelContext } from './contexts/SolarPanelContext';
 
 const App = () => {
-  const [roofDimensions, setRoofDimensions] = useState({ length: 0, width: 0 });
-  const [solarPanels, setSolarPanels] = useState([]);
+  const { roofDimensions, setRoofDimensions } = useContext(RoofDimensionsContext);
+  const { solarPanels, setSolarPanels } = useContext(SolarPanelContext);
   const [powerOutput, setPowerOutput] = useState(0);
   const [grid, setGrid] = useState([[]]);
+  const svgRef = useRef();
 
   const handleRoofDimensionsChange = (length, width) => {
     setRoofDimensions({ length, width });
@@ -27,9 +30,9 @@ const App = () => {
   const handleSolarPanelAdd = (length, width, powerCapacity) => {
     const x = 0;
     const y = 0;
-    const newSolarPanel = { x: x, y: y, length: length, width: width, powerCapacity: powerCapacity, type: 'solar' };
+    const id = solarPanels ? solarPanels.length : 0;
+    const newSolarPanel = { id: id, x: x, y: y, length: length, width: width, powerCapacity: powerCapacity, type: 'solar' };
     setSolarPanels([...solarPanels, newSolarPanel]);
-
   };
 
   const handleSolarPanelRemove = (index) => {
@@ -47,7 +50,7 @@ const App = () => {
   }
 
   const handleSolarPanelUpdate = (index, length, width, powerCapacity) => {
-    const updatedSolarPanel = { x: solarPanels[index].x, y: solarPanels[index].y, length: length, width: width, powerCapacity: powerCapacity, type: 'solar' };
+    const updatedSolarPanel = { id: index, x: solarPanels[index].x, y: solarPanels[index].y, length: length, width: width, powerCapacity: powerCapacity, type: 'solar' };
     const updatedSolarPanels = [...solarPanels];
     updatedSolarPanels[index] = updatedSolarPanel;
     setSolarPanels(updatedSolarPanels);
@@ -94,39 +97,25 @@ const App = () => {
           />
         </Grid>
         <Grid md={12} spacing={2}>
-          <DndContext>
-            <RVRoof roofDimensions={roofDimensions}>
-              {/* <div
-                style={{
-                  content: '',
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: '100%',
-                  zIndex: -1,
-                }}
-              ></div> */}
-              {/* {grid.map((row, rowIndex) => (
-            <g key={rowIndex}>
-              {row.map((cell, cellIndex) => (
-                cell && (
-                  <RoofItem key={`${rowIndex}-${cellIndex}`} x={cell.x} y={cell.y} width={cell.length} height={cell.width} type={cell.type} />
-                )
-              ))}
-            </g>
-          ))} */}
-              {solarPanels.map((solarPanel, index) => (
-                <RoofItem key={`solarPanel-${index}`} x={solarPanel.x} y={solarPanel.y} width={solarPanel.length} height={solarPanel.width} type={solarPanel.type} />
-              ))}
-            </RVRoof>
-          </DndContext>
+          <RVRoof roofDimensions={roofDimensions} svgRef={svgRef}>
+            {solarPanels.map((solarPanel, index) => (
+              <RoofItem draggable
+                onDragMove={(event) => {
+                  const { x, y } = event.delta;
+                  const limitedDelta = { x: Math.sign(x), y: Math.sign(y) };
+                  const updatedSolarPanel = { ...solarPanel, x: solarPanel.x + limitedDelta.x, y: solarPanel.y + limitedDelta.y };
+                  const updatedSolarPanels = [...solarPanels];
+                  updatedSolarPanels[index] = updatedSolarPanel;
+                  setSolarPanels(updatedSolarPanels);
+                }} svgRef={svgRef} reference={`solarPanel-${index}`} x={solarPanel.x} y={solarPanel.y} width={solarPanel.length} height={solarPanel.width} type={solarPanel.type} />
+            ))}
+          </RVRoof>
         </Grid>
         <Grid md={12} spacing={2}>
           <Calculator powerOutput={powerOutput} />
           <Button onClick={() => handleSolarPanelAdd(1, 1, 1)}>Add Solar Panel</Button>
           {/* <div className="solar-panels"> */}
-          <Grid container spacing={2}  mb={2}>
+          <Grid container spacing={2} mb={2}>
             {solarPanels.map((solarPanel, index) => (
               <Grid xs={12} md={4}>
                 <SolarPanel

@@ -1,16 +1,17 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { useDroppable } from '@dnd-kit/core';
-export function RVRoof({ children, roofDimensions }) {
-    const { setNodeRef } = useDroppable({
-        id: 'roof',
-    });
+import { SolarPanelContext } from '../contexts/SolarPanelContext';
+export function RVRoof({ children, roofDimensions, svgRef }) {
+    const { solarPanels, setSolarPanels } = useContext(SolarPanelContext);
+
     return (
-        <div ref={setNodeRef}>
+        <div>
             <div style={{ display: 'flex', alignItems:"center" }}>
                 <div style={{ marginRight: '10px', transform: 'rotate(-90deg)', transformOrigin: 'left top' }}>
                     Width
                 </div>
                 <svg
+                    ref={svgRef}
                     style={{
                         position: 'relative',
                     }}
