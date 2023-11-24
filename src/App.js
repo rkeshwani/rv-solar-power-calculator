@@ -12,8 +12,10 @@ import RoofItem from './components/RoofItem';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Unstable_Grid2'; // Grid version 2
 import Button from '@mui/material/Button';
+import { Typography } from '@mui/material';
 import { RoofDimensionsContext } from './contexts/RoofDimensionsContext';
 import { SolarPanelContext } from './contexts/SolarPanelContext';
+
 
 const App = () => {
   const { roofDimensions, setRoofDimensions } = useContext(RoofDimensionsContext);
@@ -90,6 +92,14 @@ const App = () => {
     <div className="app">
       <Container spacing={2}>
         <Grid container md={12} spacing={2} mb={2}>
+          <Grid item xs={12} md={2}>
+            <img src={`${process.env.PUBLIC_URL}/favicon.jpg`} alt="logo" width={"100%"} />
+          </Grid>
+          <Grid item xs={12} md={8}>
+            <Typography variant="h1" component="h1">
+              RV Solar Power Calculator
+            </Typography>
+          </Grid>
           <Roof
             dimensions={roofDimensions}
             onDimensionsChange={handleRoofDimensionsChange}
