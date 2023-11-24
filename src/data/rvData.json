@@ -3,6 +3,62 @@
         "id": 1,
         "name": "Grand Design MAV27",
         "length": 32.23,
-        "width": 13
+        "width": 8.33
+    },
+    {
+        "id": 2,
+        "name": "Grand Design Imagine 2400BH",
+        "exteriorHeight": 11.08,
+        "length": 28.92,
+        "width": 8,
+        "interiorHeight": 6.75
+    },
+    {
+        "id": 3,
+        "name": "Grand Design Imagine 2500RL",
+        "exteriorHeight": 11.17,
+        "length": 29.83,
+        "width": 8,
+        "interiorHeight": 6.75
+    },
+    {
+        "id": 4,
+        "name": "Grand Design Imagine 2600RB",
+        "exteriorHeight": 11.17,
+        "length": 29.67,
+        "width": 8,
+        "interiorHeight": 6.75
+    },
+    {
+        "id": 5,
+        "name": "Grand Design Imagine 2670MK",
+        "exteriorHeight": 11.17,
+        "length": 32.25,
+        "width": 8,
+        "interiorHeight": 6.75
+    },
+    {
+        "id": 6,
+        "name": "Grand Design Imagine 2800BH",
+        "exteriorHeight": 11.17,
+        "length": 32.25,
+        "width": 8,
+        "interiorHeight": 6.75
+    },
+    {
+        "id": 7,
+        "name": "Grand Design Imagine 2910BH",
+        "exteriorHeight": 11.17,
+        "length": 32.25,
+        "width": 8,
+        "interiorHeight": 6.75
+    },
+    {
+        "id": 8,
+        "name": "Grand Design Imagine 2970RL",
+        "exteriorHeight": 11.17,
+        "length": 32.25,
+        "width": 8,
+        "interiorHeight": 6.75
     }
 ]
