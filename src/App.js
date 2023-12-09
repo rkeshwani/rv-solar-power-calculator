@@ -18,7 +18,6 @@ import { SolarPanelContext } from './contexts/SolarPanelContext';
 import { SpeedDial } from '@mui/material';
 import SpeedDialIcon from '@mui/material/SpeedDialIcon';
 import SpeedDialAction from '@mui/material/SpeedDialAction';
-import SolarPower from '@mui/icons-material/SolarPower';
 
 const App = () => {
   const { roofDimensions, setRoofDimensions } = useContext(RoofDimensionsContext);
@@ -148,9 +147,6 @@ const App = () => {
 
           <SaveButton onSave={handleSave} />
         </Grid>
-        <SpeedDial style={{ position: 'fixed', bottom: '20px', right: '20px' }} icon={<SpeedDialIcon/>} ariaLabel='Add'>
-          <SpeedDialAction key={"Add Solar Panel"} tooltipTitle={"Add Solar Panel"} onClick={() => handleSolarPanelAdd(1, 1, 1)} icon={<SolarPower/>}/>
-        </SpeedDial>
       </Container>
     </div>
   );
