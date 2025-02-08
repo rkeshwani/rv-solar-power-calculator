@@ -8,9 +8,12 @@ import SaveButton from './components/SaveButton';
 import './styles.css';
 import { RVRoof } from './components/RVRoof';
 import RoofItem from './components/RoofItem';
+import { RV3DViewer } from './components/RV3D';
+import { RoofFixturesContext } from './contexts/RoofFixturesContext';
+import RoofFixtureManager from './components/RoofFixtureManager';
 // MUI imports
 import Container from '@mui/material/Container';
-import Grid from '@mui/material/Unstable_Grid2'; // Grid version 2
+import Grid from '@mui/material/Grid2'; // Grid version 2
 import Button from '@mui/material/Button';
 import { Typography } from '@mui/material';
 import { RoofDimensionsContext } from './contexts/RoofDimensionsContext';
@@ -20,6 +23,7 @@ import { SolarPanelContext } from './contexts/SolarPanelContext';
 const App = () => {
   const { roofDimensions, setRoofDimensions } = useContext(RoofDimensionsContext);
   const { solarPanels, setSolarPanels } = useContext(SolarPanelContext);
+  const { roofFixtures, setRoofFixtures } = useContext(RoofFixturesContext);
   const [powerOutput, setPowerOutput] = useState(0);
   const [grid, setGrid] = useState([[]]);
   const svgRef = useRef();
@@ -29,10 +33,22 @@ const App = () => {
   };
 
   const handleSolarPanelAdd = (length, width, powerCapacity) => {
-    const x = 0;
-    const y = 0;
+    const newPosition = findValidPosition(length, width, roofFixtures, solarPanels);
+    if (!newPosition) {
+      alert('No valid position found for the solar panel');
+      return;
+    }
+    
     const id = solarPanels ? solarPanels.length : 0;
-    const newSolarPanel = { id: id, x: x, y: y, length: length, width: width, powerCapacity: powerCapacity, type: 'solar' };
+    const newSolarPanel = {
+      id,
+      x: newPosition.x,
+      y: newPosition.y,
+      length,
+      width,
+      powerCapacity,
+      type: 'solar'
+    };
     setSolarPanels([...solarPanels, newSolarPanel]);
   };
 
@@ -88,6 +104,85 @@ const App = () => {
     console.log(newGrid);
   }
 
+  const findValidPosition = (length, width, fixtures, existingPanels) => {
+    const gridSize = 0.5; // 0.5 foot grid
+    for (let x = 0; x <= roofDimensions.length - length; x += gridSize) {
+      for (let y = 0; y <= roofDimensions.width - width; y += gridSize) {
+        if (isPositionValid(x, y, length, width, fixtures, existingPanels)) {
+          return { x, y };
+        }
+      }
+    }
+    return null;
+  };
+
+  const checkCollision = (rect1, rect2) => {
+    return !(rect1.x + rect1.length <= rect2.x ||
+      rect1.x >= rect2.x + rect2.length ||
+      rect1.y + rect1.width <= rect2.y ||
+      rect1.y >= rect2.y + rect2.width);
+  };
+
+  const isPositionValid = (x, y, length, width, fixtures, existingPanels) => {
+    // Check roof boundaries
+    if (x < 0 || y < 0 || x + length > roofDimensions.length || y + width > roofDimensions.width) {
+      return false;
+    }
+
+    // Check collision with fixtures
+    for (const fixture of fixtures) {
+      if (checkCollision(
+        { x, y, length, width },
+        { x: fixture.x, y: fixture.y, length: fixture.dimensions.length, width: fixture.dimensions.width }
+      )) {
+        return false;
+      }
+    }
+
+    // Check collision with existing panels
+    for (const panel of existingPanels) {
+      if (checkCollision(
+        { x, y, length, width },
+        { x: panel.x, y: panel.y, length: panel.length, width: panel.width }
+      )) {
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  const handlePanelMove = (index, newPosition) => {
+    const updatedSolarPanels = [...solarPanels];
+    updatedSolarPanels[index] = {
+      ...updatedSolarPanels[index],
+      x: newPosition.x,
+      y: newPosition.y
+    };
+    
+    // Check if the new position is valid
+    if (isPositionValid(
+      newPosition.x,
+      newPosition.y,
+      updatedSolarPanels[index].length,
+      updatedSolarPanels[index].width,
+      roofFixtures,
+      updatedSolarPanels.filter((_, i) => i !== index)
+    )) {
+      setSolarPanels(updatedSolarPanels);
+    }
+  };
+
+  const handleFixtureMove = (fixtureId, newPosition) => {
+    setRoofFixtures(prevFixtures => 
+      prevFixtures.map(fixture =>
+        fixture.id === fixtureId
+          ? { ...fixture, x: newPosition.x, y: newPosition.y }
+          : fixture
+      )
+    );
+  };
+
   return (
     <div className="app">
       <Container spacing={2}>
@@ -107,19 +202,13 @@ const App = () => {
           Enter the dimensions of your roof in feet or meters.
         </Grid>
         <Grid md={12} spacing={2}>
-          <RVRoof roofDimensions={roofDimensions} svgRef={svgRef}>
-            {solarPanels.map((solarPanel, index) => (
-              <RoofItem draggable
-                onDragMove={(event) => {
-                  const { x, y } = event.delta;
-                  const limitedDelta = { x: Math.sign(x), y: Math.sign(y) };
-                  const updatedSolarPanel = { ...solarPanel, x: solarPanel.x + limitedDelta.x, y: solarPanel.y + limitedDelta.y };
-                  const updatedSolarPanels = [...solarPanels];
-                  updatedSolarPanels[index] = updatedSolarPanel;
-                  setSolarPanels(updatedSolarPanels);
-                }} svgRef={svgRef} reference={`solarPanel-${index}`} x={solarPanel.x} y={solarPanel.y} width={solarPanel.length} height={solarPanel.width} type={solarPanel.type} />
-            ))}
-          </RVRoof>
+          <RV3DViewer
+            dimensions={roofDimensions}
+            solarPanels={solarPanels}
+            roofFixtures={roofFixtures}
+            onPanelMove={handlePanelMove}
+            onFixtureMove={handleFixtureMove}
+          />
         </Grid>
         <Grid md={12} spacing={2}>
           <Calculator powerOutput={powerOutput} />
@@ -145,6 +234,7 @@ const App = () => {
 
           <SaveButton onSave={handleSave} />
         </Grid>
+        <RoofFixtureManager />
       </Container>
     </div>
   );

@@ -5,13 +5,16 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { RoofDimensionsProvider } from './contexts/RoofDimensionsContext';
 import { SolarPanelProvider } from './contexts/SolarPanelContext';
+import { RoofFixturesProvider } from './contexts/RoofFixturesContext';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
     <RoofDimensionsProvider>
       <SolarPanelProvider>
-        <App />
+        <RoofFixturesProvider>
+          <App />
+        </RoofFixturesProvider>
       </SolarPanelProvider>
     </RoofDimensionsProvider>
   </React.StrictMode>
