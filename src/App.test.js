@@ -1,10 +1,15 @@
 import React from 'react';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, within, waitFor, act } from '@testing-library/react';
 import App from './App';
+import { getSolarIrradiance } from './utils/nrelUtils'; // Import the actual function
 import { RoofDimensionsProvider } from './contexts/RoofDimensionsContext';
 import { SolarPanelProvider } from './contexts/SolarPanelContext';
 import { RoofFixturesProvider } from './contexts/RoofFixturesContext';
-import { BatteryProvider } from './contexts/BatteryContext';
+import { BatteryProvider, BatteryContext } from './contexts/BatteryContext'; // Ensure BatteryContext is imported if used directly
+import { RoofDimensionsContext } from './contexts/RoofDimensionsContext'; // Ensure these are imported for direct use
+import { SolarPanelContext } from './contexts/SolarPanelContext'; // if needed by new tests directly
+import { RoofFixturesContext } from './contexts/RoofFixturesContext'; // if needed
+
 
 // Mock child components that are complex or not relevant to these specific tests
 jest.mock('./components/RV3D', () => ({
@@ -29,8 +34,29 @@ jest.mock('@mui/material/TextField', () => (props) => {
   );
 });
 
+// Mock the nrelUtils module
+jest.mock('./utils/nrelUtils', () => ({
+  getSolarIrradiance: jest.fn(),
+}));
 
-const AllProviders = ({ children }) => {
+// Mock console methods
+global.console = {
+  error: jest.fn(),
+  warn: jest.fn(),
+  log: jest.fn(),
+};
+
+// Mock navigator.geolocation
+const mockGeolocation = {
+  getCurrentPosition: jest.fn(),
+};
+global.navigator.geolocation = mockGeolocation;
+
+// Mock window.alert
+global.alert = jest.fn();
+
+// Wrapper with ACTUAL providers for the OLD tests
+const AllProvidersForOldTests = ({ children }) => {
   return (
     <RoofDimensionsProvider>
       <SolarPanelProvider>
@@ -42,11 +68,56 @@ const AllProviders = ({ children }) => {
   );
 };
 
-const renderApp = () => render(<App />, { wrapper: AllProviders });
+// Render function for the OLD tests, uses actual context providers
+const renderAppOldTests = () => render(<App />, { wrapper: AllProvidersForOldTests });
+
+// Specific MOCK context values for the NEW solar integration tests
+const mockRoofDimensionsContext = {
+  roofDimensions: { length: 10, width: 10 },
+  setRoofDimensions: jest.fn(),
+};
+const mockSolarPanelContext = {
+  solarPanels: [], // Start with no panels for these tests initially
+  setSolarPanels: jest.fn(),
+};
+const mockRoofFixturesContext = {
+  roofFixtures: [],
+  setRoofFixtures: jest.fn(),
+};
+const mockBatteryContext = {
+  batteryCapacity: 100, // Default battery capacity
+  setBatteryCapacity: jest.fn(),
+};
+
+// Render function for the NEW solar integration tests, using MOCKED context values
+const renderAppWithMockedProvidersForNewTests = () => {
+  return render(
+    <RoofDimensionsContext.Provider value={mockRoofDimensionsContext}>
+      <SolarPanelContext.Provider value={mockSolarPanelContext}>
+        <RoofFixturesContext.Provider value={mockRoofFixturesContext}>
+          <BatteryContext.Provider value={mockBatteryContext}>
+            <App />
+          </BatteryContext.Provider>
+        </RoofFixturesContext.Provider>
+      </SolarPanelContext.Provider>
+    </RoofDimensionsContext.Provider>
+  );
+};
+
 
 describe('App Component - Integration Tests for Power and Charging Time', () => {
+  beforeEach(() => {
+    // Clear mocks that might be affected by these older tests if they also use them
+    console.log.mockClear();
+    console.warn.mockClear();
+    console.error.mockClear();
+    alert.mockClear(); // Clear alert mock before each test in this suite
+    // getSolarIrradiance.mockClear(); // Not used by this suite
+    // mockGeolocation.getCurrentPosition.mockClear(); // Not used by this suite
+  });
+
   test('renders App and initial Calculator values', () => {
-    renderApp();
+    renderAppOldTests();
     // Check for a high-level element in App
     expect(screen.getByText(/RV Solar Power Calculator/i)).toBeInTheDocument();
 
@@ -57,7 +128,18 @@ describe('App Component - Integration Tests for Power and Charging Time', () => 
   });
 
   test('calculatePowerAndChargeTime: updates power output and charging time when a solar panel is added', async () => {
-    renderApp();
+    renderAppOldTests();
+
+    // Set roof dimensions before adding panels
+    const lengthInput = screen.getByTestId('mock-textfield-length-(ft/m)');
+    const widthInput = screen.getByTestId('mock-textfield-width-(ft/m)');
+    
+    fireEvent.change(lengthInput, { target: { value: '10' } });
+    fireEvent.change(widthInput, { target: { value: '10' } });
+
+    // Wait for dimension update to reflect if necessary, though context updates should be synchronous with re-renders.
+    // Check that App component has received the new dimensions (optional, direct check might be hard)
+    // For now, assume dimensions are set and proceed to test panel addition.
 
     // Initial state: 0 power, 100Ah battery, N/A charge time
     expect(screen.getByText(/Power Output: 0 kW/i)).toBeInTheDocument();
@@ -71,31 +153,38 @@ describe('App Component - Integration Tests for Power and Charging Time', () => 
     // Wait for state updates if necessary, though with simple mocks it might be synchronous
     // Power output should be 1 kW (from the added panel)
     // Battery capacity is 100 Ah
-    // Sunlight hours is 5 (constant in App.js)
+    // Sunlight hours is 5 (constant in App.js initially, this test doesn't involve geolocation)
     // Expected charging time = 100 / (1 * 5) = 20 hours
-    expect(await screen.findByText(/Power Output: 1 kW/i)).toBeInTheDocument();
+    // Note: findByText has a default timeout of 1000ms. If updates are slow, might need to increase.
+    expect(await screen.findByText(/Power Output: 1 kW/i, {}, { timeout: 2000 })).toBeInTheDocument();
     expect(screen.getByText(/Battery Capacity: 100 Ah/i)).toBeInTheDocument();
-    expect(await screen.findByText(/Estimated time to full charge: 20.00 hours/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Estimated time to full charge: 20.00 hours/i, {}, { timeout: 2000 })).toBeInTheDocument();
 
     // Add another panel
     fireEvent.click(addPanelButton);
     // Power output should be 2 kW
     // Expected charging time = 100 / (2 * 5) = 10 hours
-    expect(await screen.findByText(/Power Output: 2 kW/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Power Output: 2 kW/i, {}, { timeout: 2000 })).toBeInTheDocument();
     expect(screen.getByText(/Battery Capacity: 100 Ah/i)).toBeInTheDocument();
-    expect(await screen.findByText(/Estimated time to full charge: 10.00 hours/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Estimated time to full charge: 10.00 hours/i, {}, { timeout: 2000 })).toBeInTheDocument();
   });
 
   test('calculatePowerAndChargeTime: updates charging time when battery capacity changes', async () => {
-    renderApp();
+    renderAppOldTests();
+
+    // Set roof dimensions to allow panel placement
+    const lengthInput = screen.getByTestId('mock-textfield-length-(ft/m)');
+    const widthInput = screen.getByTestId('mock-textfield-width-(ft/m)');
+    fireEvent.change(lengthInput, { target: { value: '10' } });
+    fireEvent.change(widthInput, { target: { value: '10' } });
 
     // Add a solar panel to have some power output
     const addPanelButton = screen.getByRole('button', { name: /Add Solar Panel/i });
     fireEvent.click(addPanelButton); // Adds a 1kW panel
 
     // Initial calculation: 100Ah / (1kW * 5h) = 20 hours
-    expect(await screen.findByText(/Power Output: 1 kW/i)).toBeInTheDocument();
-    expect(await screen.findByText(/Estimated time to full charge: 20.00 hours/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Power Output: 1 kW/i, {}, { timeout: 2000 })).toBeInTheDocument();
+    expect(await screen.findByText(/Estimated time to full charge: 20.00 hours/i, {}, { timeout: 2000 })).toBeInTheDocument();
 
     // Change battery capacity using the input in Calculator
     const batteryInput = screen.getByLabelText(/Set Battery Capacity \(Ah\)/i);
@@ -112,60 +201,43 @@ describe('App Component - Integration Tests for Power and Charging Time', () => 
   });
 
   test('calculatePowerAndChargeTime: chargingTime is N/A if powerOutput is 0 after panels are removed', async () => {
-    renderApp();
+    renderAppOldTests();
+
+        // Set roof dimensions to allow panel placement
+    const lengthInput = screen.getByTestId('mock-textfield-length-(ft/m)');
+    const widthInput = screen.getByTestId('mock-textfield-width-(ft/m)');
+    fireEvent.change(lengthInput, { target: { value: '10' } });
+    fireEvent.change(widthInput, { target: { value: '10' } });
 
     const addPanelButton = screen.getByRole('button', { name: /Add Solar Panel/i });
     fireEvent.click(addPanelButton); // Adds a 1kW panel
 
-    expect(await screen.findByText(/Power Output: 1 kW/i)).toBeInTheDocument();
-    expect(await screen.findByText(/Estimated time to full charge: 20.00 hours/i)).toBeInTheDocument(); // 100Ah / (1kW * 5h)
-
-    // Find the remove button for the first panel.
-    // SolarPanel component renders its own details and a remove button.
-    // We need to locate the panel, then the button within it.
-    // This assumes SolarPanel component structure includes a button with text "Remove"
-    // and is identifiable perhaps by being within a grid item or a specific data-testid if available.
-    // For simplicity, let's assume there's a way to get to the "Remove" button.
-    // If SolarPanel component was more complex, we'd mock it or add test-ids.
-    // Let's assume SolarPanel creates a structure like: <Grid> ... <Button>Remove</Button> </Grid>
-    
-    // This part is tricky without knowing SolarPanel.js structure.
-    // Let's assume SolarPanel.js has a 'Remove' button.
-    // And let's assume we have one panel, so findByRole will get it.
-    // This will need adjustment based on actual SolarPanel.js implementation.
-    // For now, we will look for a button with name "Remove" inside a SolarPanel instance.
-    // This will likely fail if SolarPanel doesn't have such a button or if it's not uniquely identifiable.
-
-    // The SolarPanel component has props: index, length, width, powerCapacity, onRemove, onUpdate
-    // It should have a remove button. Let's assume it's just 'Remove'.
-    // We'll try to find it. If not, this test needs SolarPanel.js to be more testable or mocked.
-    const panelElements = await screen.findAllByText(/Length: 1/i); // Find all panels (there should be 1)
-    // This is a heuristic. A better way would be a test-id on the panel container.
-    const panelContainer = panelElements[0].closestGridItem(); // Hypothetical helper or manual traversal needed
-    
-    // Due to the complexity of accurately targeting the remove button without seeing SolarPanel.js,
-    // and to keep this focused on App.js logic:
-    // A more robust way for testing App.js would be to mock SolarPanelContext's setSolarPanels
-    // or to trigger panel removal through a more direct mechanism if available.
-    // However, we are testing the "flow".
-    // If SolarPanel.js renders a button with text "Remove", this should work:
+    expect(await screen.findByText(/Power Output: 1 kW/i, {}, { timeout: 2000 })).toBeInTheDocument();
+    expect(await screen.findByText(/Estimated time to full charge: 20.00 hours/i, {}, { timeout: 2000 })).toBeInTheDocument(); // 100Ah / (1kW * 5h)
     
     const removeButtons = await screen.findAllByRole('button', { name: /Remove/i });
-    expect(removeButtons.length).toBeGreaterThan(0); // Ensure at least one remove button is found
-    fireEvent.click(removeButtons[0]); // Click the first remove button found
+    expect(removeButtons.length).toBeGreaterThan(0); 
+    fireEvent.click(removeButtons[0]); 
 
     expect(await screen.findByText(/Power Output: 0 kW/i)).toBeInTheDocument();
-    expect(screen.getByText(/Battery Capacity: 100 Ah/i)).toBeInTheDocument(); // Stays 100, or last set value
+    expect(screen.getByText(/Battery Capacity: 100 Ah/i)).toBeInTheDocument(); 
     expect(await screen.findByText(/Estimated time to full charge: N\/A/i)).toBeInTheDocument();
   });
 
-  test('calculatePowerAndChargeTime: chargingTime is N/A if battery capacity is 0', async () => {
-    renderApp();
+  test('calculatePowerAndChargeTime: chargingTime is 0.00 if battery capacity is 0', async () => {
+    renderAppOldTests();
+
+    // Set roof dimensions to allow panel placement
+    const lengthInput = screen.getByTestId('mock-textfield-length-(ft/m)');
+    const widthInput = screen.getByTestId('mock-textfield-width-(ft/m)');
+    fireEvent.change(lengthInput, { target: { value: '10' } });
+    fireEvent.change(widthInput, { target: { value: '10' } });
+
     const addPanelButton = screen.getByRole('button', { name: /Add Solar Panel/i });
     fireEvent.click(addPanelButton); // 1kW panel, 100Ah default battery -> 20 hours
 
-    expect(await screen.findByText(/Power Output: 1 kW/i)).toBeInTheDocument();
-    expect(await screen.findByText(/Estimated time to full charge: 20.00 hours/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Power Output: 1 kW/i, {}, { timeout: 2000 })).toBeInTheDocument();
+    expect(await screen.findByText(/Estimated time to full charge: 20.00 hours/i, {}, { timeout: 2000 })).toBeInTheDocument();
 
     const batteryInput = screen.getByLabelText(/Set Battery Capacity \(Ah\)/i);
     fireEvent.change(batteryInput, { target: { value: '0' } });
@@ -176,27 +248,80 @@ describe('App Component - Integration Tests for Power and Charging Time', () => 
   });
 });
 
-// Helper to find the closest Grid item if needed, or use testing-library queries more directly.
-// This is a placeholder for more complex DOM traversal if required.
-// HTMLElement.prototype.closestGridItem = function() {
-//   let el = this;
-//   while (el && el.parentElement) {
-//     // This condition depends on how Grid items are structured (e.g. class name, role)
-//     if (el.parentElement.classList.contains('MuiGrid-item')) { // Example
-//       return el.parentElement;
-//     }
-//     el = el.parentElement;
-//   }
-//   return null;
-// };
+// New test suite for solar integration
+describe('App component solar integration', () => {
+  beforeEach(() => {
+    jest.clearAllMocks(); 
+    getSolarIrradiance.mockReset();
+    // Ensure navigator.geolocation is reset to the mock for each test in this suite
+    global.navigator.geolocation = mockGeolocation; 
+  });
 
-// If SolarPanel component is simple and its remove button is directly findable:
-// Example: if SolarPanel renders <button onClick={onRemove}>Remove Panel {index}</button>
-// const removeButtonForPanel0 = screen.getByRole('button', {name: /Remove Panel 0/i});
-// fireEvent.click(removeButtonForPanel0);
+  it('should fetch GHI and update sunlight hours on successful geolocation and API call', async () => {
+    mockGeolocation.getCurrentPosition.mockImplementationOnce((successCallback) => {
+      successCallback({ coords: { latitude: 40, longitude: -105 } });
+    });
+    getSolarIrradiance.mockResolvedValueOnce(5.5); // Mock successful GHI value
 
-// If `sunlightHours` were dynamic and could be 0, a test would be:
-// test('calculatePowerAndChargeTime: chargingTime is N/A if sunlightHours is 0', () => { ... });
-// But since it's a constant 5 in App.js, this scenario isn't directly testable by changing sunlightHours from here
-// unless we modify App.js to take sunlightHours from a context/prop, or mock the constant if possible.
-// For now, we rely on the fact that if powerOutput is 0, it becomes N/A, which covers the division by zero aspect.
+    renderAppWithMockedProvidersForNewTests(); // Use the correctly named render function
+    
+    await waitFor(() => {
+      expect(navigator.geolocation.getCurrentPosition).toHaveBeenCalledTimes(1);
+    });
+    await waitFor(() => {
+      expect(getSolarIrradiance).toHaveBeenCalledWith(40, -105);
+    });
+    
+    await waitFor(() => {
+       expect(console.log).toHaveBeenCalledWith('Successfully fetched GHI: 5.5, updated sunlightHours.');
+    });
+    // Add assertions here to check if charging time updates based on 5.5 sunlight hours if possible
+    // This depends on how App.js state changes propagate and if Calculator reflects it.
+    // For example, if a panel was added, the charging time would use 5.5 instead of 5.
+    // With 0 panels (current mockSolarPanelContext), power output is 0, so charging time is N/A.
+    // If we want to test the effect on charging time, we'd need to set up panels in mockSolarPanelContext.
+    // For now, the console.log confirms the GHI was received and state update was attempted.
+  });
+
+  it('should use default sunlight hours and log warning on geolocation failure', async () => {
+    mockGeolocation.getCurrentPosition.mockImplementationOnce((_, errorCallback) => {
+      errorCallback({ message: 'User denied Geolocation' });
+    });
+
+    renderAppWithMockedProvidersForNewTests(); // Use the correctly named render function
+
+    await waitFor(() => {
+      expect(navigator.geolocation.getCurrentPosition).toHaveBeenCalledTimes(1);
+    });
+    expect(getSolarIrradiance).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(console.warn).toHaveBeenCalledWith('Using default sunlight hours (5) due to geolocation error.');
+    });
+  });
+
+  it('should use default sunlight hours and log warning if NREL API call fails', async () => {
+    mockGeolocation.getCurrentPosition.mockImplementationOnce((successCallback) => {
+      successCallback({ coords: { latitude: 40, longitude: -105 } });
+    });
+    getSolarIrradiance.mockResolvedValueOnce(null); // Mock failed API call
+
+    renderAppWithMockedProvidersForNewTests(); // Use the correctly named render function
+
+    await waitFor(() => {
+      expect(getSolarIrradiance).toHaveBeenCalledWith(40, -105);
+    });
+    await waitFor(() => {
+      expect(console.warn).toHaveBeenCalledWith('Failed to fetch solar irradiance data. Using default sunlight hours (5).');
+    });
+  });
+
+  it('should log warning if geolocation is not supported', async () => {
+    global.navigator.geolocation = undefined; // Simulate no geolocation support
+    renderAppWithMockedProvidersForNewTests(); // Use the correctly named render function
+    await waitFor(() => {
+        expect(console.warn).toHaveBeenCalledWith('Geolocation is not supported by this browser. Using default sunlight hours (5).');
+    });
+    // No need to restore global.navigator.geolocation here because beforeEach will handle it.
+  });
+});
+

@@ -3,6 +3,7 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 //Project imports
 import Roof from './components/Roof';
 import SolarPanel from './components/SolarPanel';
+import { getSolarIrradiance } from './utils/nrelUtils';
 import Calculator from './components/Calculator';
 import SaveButton from './components/SaveButton';
 import './styles.css';
@@ -29,6 +30,7 @@ const App = () => {
   const [powerOutput, setPowerOutput] = useState(0);
   // const [batteryCapacity, setBatteryCapacity] = useState(100); // Removed local state
   const [chargingTime, setChargingTime] = useState(0);
+  const [sunlightHours, setSunlightHours] = useState(5); // Default to 5 hours
   const [grid, setGrid] = useState([[]]);
   const svgRef = useRef();
 
@@ -68,7 +70,7 @@ const App = () => {
       newPowerOutput += isNaN(solarPanel.powerCapacity) ? 0 : solarPanel.powerCapacity;
     }
 
-    const sunlightHours = 5; // Placeholder
+    // const sunlightHours = 5; // Placeholder // Removed hardcoded value
     let newChargingTime;
 
     if (newPowerOutput === 0 || sunlightHours === 0) {
@@ -90,7 +92,41 @@ const App = () => {
 
   useEffect(() => {
     calculatePowerAndChargeTime();
-  }, [solarPanels, batteryCapacity]);
+  }, [solarPanels, batteryCapacity, sunlightHours]); // Add sunlightHours here
+
+  useEffect(() => {
+    const fetchSolarData = async (latitude, longitude) => {
+      const ghi = await getSolarIrradiance(latitude, longitude);
+      if (ghi !== null) {
+        // The NREL API returns kWh/m^2/day.
+        // Assuming this value can be directly used as "peak sunlight hours"
+        // for typical solar panel efficiency calculations.
+        setSunlightHours(ghi);
+        console.log(`Successfully fetched GHI: ${ghi}, updated sunlightHours.`);
+      } else {
+        console.warn('Failed to fetch solar irradiance data. Using default sunlight hours (5).');
+        // Optional: Inform the user that default values are being used.
+      }
+    };
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          console.log(`Geolocation successful: Lat: ${latitude}, Lon: ${longitude}`);
+          fetchSolarData(latitude, longitude);
+        },
+        (error) => {
+          console.error('Error getting geolocation:', error);
+          console.warn('Using default sunlight hours (5) due to geolocation error.');
+          // Optional: Inform the user that default values are being used.
+        }
+      );
+    } else {
+      console.warn('Geolocation is not supported by this browser. Using default sunlight hours (5).');
+      // Optional: Inform the user that default values are being used.
+    }
+  }, []); // Empty dependency array to run once on component mount
 
 
   const handleSave = () => {
