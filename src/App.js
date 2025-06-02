@@ -18,13 +18,17 @@ import Button from '@mui/material/Button';
 import { Typography } from '@mui/material';
 import { RoofDimensionsContext } from './contexts/RoofDimensionsContext';
 import { SolarPanelContext } from './contexts/SolarPanelContext';
+import { BatteryContext } from './contexts/BatteryContext';
 
 
 const App = () => {
   const { roofDimensions, setRoofDimensions } = useContext(RoofDimensionsContext);
   const { solarPanels, setSolarPanels } = useContext(SolarPanelContext);
   const { roofFixtures, setRoofFixtures } = useContext(RoofFixturesContext);
+  const { batteryCapacity, setBatteryCapacity } = useContext(BatteryContext); // Use BatteryContext
   const [powerOutput, setPowerOutput] = useState(0);
+  // const [batteryCapacity, setBatteryCapacity] = useState(100); // Removed local state
+  const [chargingTime, setChargingTime] = useState(0);
   const [grid, setGrid] = useState([[]]);
   const svgRef = useRef();
 
@@ -58,13 +62,24 @@ const App = () => {
 
   };
 
-  const calculateTotalCapacity = () => {
-    let totalCapacity = 0;
+  const calculatePowerAndChargeTime = () => {
+    let newPowerOutput = 0;
     for (const solarPanel of solarPanels) {
-      totalCapacity += isNaN(solarPanel.powerCapacity) ? 0 : solarPanel.powerCapacity;
+      newPowerOutput += isNaN(solarPanel.powerCapacity) ? 0 : solarPanel.powerCapacity;
     }
-    setPowerOutput(totalCapacity);
-  }
+
+    const sunlightHours = 5; // Placeholder
+    let newChargingTime;
+
+    if (newPowerOutput === 0 || sunlightHours === 0) {
+      newChargingTime = Infinity; // Or a very large number
+    } else {
+      newChargingTime = batteryCapacity / (newPowerOutput * sunlightHours);
+    }
+
+    setPowerOutput(newPowerOutput);
+    setChargingTime(newChargingTime);
+  };
 
   const handleSolarPanelUpdate = (index, length, width, powerCapacity) => {
     const updatedSolarPanel = { id: index, x: solarPanels[index].x, y: solarPanels[index].y, length: length, width: width, powerCapacity: powerCapacity, type: 'solar' };
@@ -74,8 +89,8 @@ const App = () => {
   };
 
   useEffect(() => {
-    calculateTotalCapacity();
-  }, [solarPanels]);
+    calculatePowerAndChargeTime();
+  }, [solarPanels, batteryCapacity]);
 
 
   const handleSave = () => {
@@ -211,7 +226,17 @@ const App = () => {
           />
         </Grid>
         <Grid md={12} spacing={2}>
-          <Calculator powerOutput={powerOutput} />
+          <Calculator
+            powerOutput={powerOutput}
+            batteryCapacity={batteryCapacity}
+            setBatteryCapacity={setBatteryCapacity}
+            chargingTime={chargingTime}
+          />
+          {/* The input field for battery capacity is now managed by the Calculator component, 
+              which gets setBatteryCapacity from this App component, which in turn gets it from BatteryContext.
+              So, no need for a separate input field here anymore. 
+              If direct manipulation from App.js was still needed, it would use the context's setBatteryCapacity.
+           */}
           <Button onClick={() => handleSolarPanelAdd(1, 1, 1)}>Add Solar Panel</Button>
           {/* <div className="solar-panels"> */}
           <Grid container spacing={2} mb={2}>
