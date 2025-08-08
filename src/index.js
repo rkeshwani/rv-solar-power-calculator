@@ -6,6 +6,7 @@ import reportWebVitals from './reportWebVitals';
 import { RoofDimensionsProvider } from './contexts/RoofDimensionsContext';
 import { SolarPanelProvider } from './contexts/SolarPanelContext';
 import { RoofFixturesProvider } from './contexts/RoofFixturesContext';
+import { BatteryProvider } from './contexts/BatteryContext';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
@@ -13,7 +14,9 @@ root.render(
     <RoofDimensionsProvider>
       <SolarPanelProvider>
         <RoofFixturesProvider>
-          <App />
+          <BatteryProvider>
+            <App />
+          </BatteryProvider>
         </RoofFixturesProvider>
       </SolarPanelProvider>
     </RoofDimensionsProvider>

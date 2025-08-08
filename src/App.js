@@ -3,6 +3,7 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 //Project imports
 import Roof from './components/Roof';
 import SolarPanel from './components/SolarPanel';
+import { getSolarIrradiance } from './utils/nrelUtils';
 import Calculator from './components/Calculator';
 import SaveButton from './components/SaveButton';
 import './styles.css';
@@ -18,13 +19,18 @@ import Button from '@mui/material/Button';
 import { Typography } from '@mui/material';
 import { RoofDimensionsContext } from './contexts/RoofDimensionsContext';
 import { SolarPanelContext } from './contexts/SolarPanelContext';
+import { BatteryContext } from './contexts/BatteryContext';
 
 
 const App = () => {
   const { roofDimensions, setRoofDimensions } = useContext(RoofDimensionsContext);
   const { solarPanels, setSolarPanels } = useContext(SolarPanelContext);
   const { roofFixtures, setRoofFixtures } = useContext(RoofFixturesContext);
+  const { batteryCapacity, setBatteryCapacity } = useContext(BatteryContext); // Use BatteryContext
   const [powerOutput, setPowerOutput] = useState(0);
+  // const [batteryCapacity, setBatteryCapacity] = useState(100); // Removed local state
+  const [chargingTime, setChargingTime] = useState(0);
+  const [sunlightHours, setSunlightHours] = useState(5); // Default to 5 hours
   const [grid, setGrid] = useState([[]]);
   const svgRef = useRef();
 
@@ -58,13 +64,24 @@ const App = () => {
 
   };
 
-  const calculateTotalCapacity = () => {
-    let totalCapacity = 0;
+  const calculatePowerAndChargeTime = () => {
+    let newPowerOutput = 0;
     for (const solarPanel of solarPanels) {
-      totalCapacity += isNaN(solarPanel.powerCapacity) ? 0 : solarPanel.powerCapacity;
+      newPowerOutput += isNaN(solarPanel.powerCapacity) ? 0 : solarPanel.powerCapacity;
     }
-    setPowerOutput(totalCapacity);
-  }
+
+    // const sunlightHours = 5; // Placeholder // Removed hardcoded value
+    let newChargingTime;
+
+    if (newPowerOutput === 0 || sunlightHours === 0) {
+      newChargingTime = Infinity; // Or a very large number
+    } else {
+      newChargingTime = batteryCapacity / (newPowerOutput * sunlightHours);
+    }
+
+    setPowerOutput(newPowerOutput);
+    setChargingTime(newChargingTime);
+  };
 
   const handleSolarPanelUpdate = (index, length, width, powerCapacity) => {
     const updatedSolarPanel = { id: index, x: solarPanels[index].x, y: solarPanels[index].y, length: length, width: width, powerCapacity: powerCapacity, type: 'solar' };
@@ -74,8 +91,42 @@ const App = () => {
   };
 
   useEffect(() => {
-    calculateTotalCapacity();
-  }, [solarPanels]);
+    calculatePowerAndChargeTime();
+  }, [solarPanels, batteryCapacity, sunlightHours]); // Add sunlightHours here
+
+  useEffect(() => {
+    const fetchSolarData = async (latitude, longitude) => {
+      const ghi = await getSolarIrradiance(latitude, longitude);
+      if (ghi !== null) {
+        // The NREL API returns kWh/m^2/day.
+        // Assuming this value can be directly used as "peak sunlight hours"
+        // for typical solar panel efficiency calculations.
+        setSunlightHours(ghi);
+        console.log(`Successfully fetched GHI: ${ghi}, updated sunlightHours.`);
+      } else {
+        console.warn('Failed to fetch solar irradiance data. Using default sunlight hours (5).');
+        // Optional: Inform the user that default values are being used.
+      }
+    };
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          console.log(`Geolocation successful: Lat: ${latitude}, Lon: ${longitude}`);
+          fetchSolarData(latitude, longitude);
+        },
+        (error) => {
+          console.error('Error getting geolocation:', error);
+          console.warn('Using default sunlight hours (5) due to geolocation error.');
+          // Optional: Inform the user that default values are being used.
+        }
+      );
+    } else {
+      console.warn('Geolocation is not supported by this browser. Using default sunlight hours (5).');
+      // Optional: Inform the user that default values are being used.
+    }
+  }, []); // Empty dependency array to run once on component mount
 
 
   const handleSave = () => {
@@ -211,7 +262,17 @@ const App = () => {
           />
         </Grid>
         <Grid md={12} spacing={2}>
-          <Calculator powerOutput={powerOutput} />
+          <Calculator
+            powerOutput={powerOutput}
+            batteryCapacity={batteryCapacity}
+            setBatteryCapacity={setBatteryCapacity}
+            chargingTime={chargingTime}
+          />
+          {/* The input field for battery capacity is now managed by the Calculator component, 
+              which gets setBatteryCapacity from this App component, which in turn gets it from BatteryContext.
+              So, no need for a separate input field here anymore. 
+              If direct manipulation from App.js was still needed, it would use the context's setBatteryCapacity.
+           */}
           <Button onClick={() => handleSolarPanelAdd(1, 1, 1)}>Add Solar Panel</Button>
           {/* <div className="solar-panels"> */}
           <Grid container spacing={2} mb={2}>
