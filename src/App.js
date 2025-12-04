@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
 //Project imports
 import Roof from './components/Roof';
+import HouseMode from './components/HouseMode';
 import SolarPanel from './components/SolarPanel';
 import Calculator from './components/Calculator';
 import SaveButton from './components/SaveButton';
@@ -15,6 +16,7 @@ import RoofFixtureManager from './components/RoofFixtureManager';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid2'; // Grid version 2
 import Button from '@mui/material/Button';
+import ButtonGroup from '@mui/material/ButtonGroup';
 import { Typography } from '@mui/material';
 import { RoofDimensionsContext } from './contexts/RoofDimensionsContext';
 import { SolarPanelContext } from './contexts/SolarPanelContext';
@@ -26,6 +28,7 @@ const App = () => {
   const { roofFixtures, setRoofFixtures } = useContext(RoofFixturesContext);
   const [powerOutput, setPowerOutput] = useState(0);
   const [grid, setGrid] = useState([[]]);
+  const [mode, setMode] = useState('rv'); // 'rv' or 'house'
   const svgRef = useRef();
 
   const handleRoofDimensionsChange = (length, width) => {
@@ -192,49 +195,78 @@ const App = () => {
           </Grid>
           <Grid item xs={12} md={8}>
             <Typography variant="h1" component="h1">
-              RV Solar Power Calculator
+              Solar Power Calculator
             </Typography>
+            <ButtonGroup variant="contained" aria-label="outlined primary button group" sx={{ mt: 2 }}>
+              <Button
+                onClick={() => setMode('rv')}
+                variant={mode === 'rv' ? 'contained' : 'outlined'}
+              >
+                RV Mode
+              </Button>
+              <Button
+                onClick={() => setMode('house')}
+                variant={mode === 'house' ? 'contained' : 'outlined'}
+              >
+                House Mode
+              </Button>
+            </ButtonGroup>
           </Grid>
-          <Roof
-            dimensions={roofDimensions}
-            onDimensionsChange={handleRoofDimensionsChange}
-          />
-          Enter the dimensions of your roof in feet or meters.
-        </Grid>
-        <Grid md={12} spacing={2}>
-          <RV3DViewer
-            dimensions={roofDimensions}
-            solarPanels={solarPanels}
-            roofFixtures={roofFixtures}
-            onPanelMove={handlePanelMove}
-            onFixtureMove={handleFixtureMove}
-          />
-        </Grid>
-        <Grid md={12} spacing={2}>
-          <Calculator powerOutput={powerOutput} />
-          <Button onClick={() => handleSolarPanelAdd(1, 1, 1)}>Add Solar Panel</Button>
-          {/* <div className="solar-panels"> */}
-          <Grid container spacing={2} mb={2}>
-            {solarPanels.map((solarPanel, index) => (
-              <Grid xs={12} md={4}>
-                <SolarPanel
-                  key={index}
-                  index={index}
-                  length={solarPanel.length}
-                  width={solarPanel.width}
-                  powerCapacity={solarPanel.powerCapacity}
-                  onRemove={handleSolarPanelRemove}
-                  onUpdate={handleSolarPanelUpdate}
-                  updateGrid={updateGrid}
-                />
-              </Grid>
-            ))}
-          </Grid>
-          {/* </div> */}
 
-          <SaveButton onSave={handleSave} />
+          {mode === 'rv' ? (
+            <>
+              <Roof
+                dimensions={roofDimensions}
+                onDimensionsChange={handleRoofDimensionsChange}
+              />
+              <Grid xs={12}>
+                <Typography>Enter the dimensions of your roof in feet or meters.</Typography>
+              </Grid>
+            </>
+          ) : (
+            <HouseMode />
+          )}
         </Grid>
-        <RoofFixtureManager />
+
+        {mode === 'rv' && (
+          <>
+            <Grid md={12} spacing={2}>
+              <RV3DViewer
+                dimensions={roofDimensions}
+                solarPanels={solarPanels}
+                roofFixtures={roofFixtures}
+                onPanelMove={handlePanelMove}
+                onFixtureMove={handleFixtureMove}
+              />
+            </Grid>
+
+            <Grid md={12} spacing={2}>
+              <Calculator powerOutput={powerOutput} />
+              <Button onClick={() => handleSolarPanelAdd(1, 1, 1)}>Add Solar Panel</Button>
+              {/* <div className="solar-panels"> */}
+              <Grid container spacing={2} mb={2}>
+                {solarPanels.map((solarPanel, index) => (
+                  <Grid xs={12} md={4}>
+                    <SolarPanel
+                      key={index}
+                      index={index}
+                      length={solarPanel.length}
+                      width={solarPanel.width}
+                      powerCapacity={solarPanel.powerCapacity}
+                      onRemove={handleSolarPanelRemove}
+                      onUpdate={handleSolarPanelUpdate}
+                      updateGrid={updateGrid}
+                    />
+                  </Grid>
+                ))}
+              </Grid>
+              {/* </div> */}
+
+              <SaveButton onSave={handleSave} />
+            </Grid>
+            <RoofFixtureManager />
+          </>
+        )}
       </Container>
     </div>
   );
